@@ -1,0 +1,43 @@
+"""Composition root and FastAPI dependency providers.
+
+Only application-scoped, stateless services belong in this container. Request
+state is supplied separately through FastAPI dependencies.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Annotated
+
+from fastapi import Depends, Request
+
+from {{ project_snake }}.services import HealthService
+
+
+@dataclass(frozen=True, slots=True)
+class ServiceContainer:
+    """Application-scoped dependencies assembled once per app instance."""
+
+    health_service: HealthService
+
+
+def build_service_container() -> ServiceContainer:
+    """Construct concrete application services in one visible place."""
+    return ServiceContainer(
+        health_service=HealthService(),
+    )
+
+
+def get_service_container(request: Request) -> ServiceContainer:
+    """Read the app-scoped container from this application's state."""
+    return request.app.state.services
+
+
+def get_health_service(
+    container: Annotated[ServiceContainer, Depends(get_service_container)],
+) -> HealthService:
+    """Provide the health service through FastAPI dependency injection."""
+    return container.health_service
+
+
+HealthServiceDep = Annotated[HealthService, Depends(get_health_service)]

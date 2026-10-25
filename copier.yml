@@ -1,0 +1,131 @@
+_subdirectory: template
+_templates_suffix: .jinja
+
+_envops:
+  keep_trailing_newline: true
+
+# Project metadata and configuration options for the template
+project_name:
+  type: str
+  help: The name of the project
+  default: FastAPI Service
+  validator: >-
+    {% if not (project_name.strip() | regex_search('^[a-zA-Z][a-zA-Z0-9_ -]*$')) %}
+      The project name must start with a letter and contain only alphanumeric characters, spaces, underscores, and hyphens.
+    {% endif %}
+
+# Derived values stay out of the questionnaire but are available to templates.
+project_slug:
+  type: str
+  default: "{{ project_name.strip() | lower | replace('_', '-') | replace(' ', '-') }}"
+  when: false
+
+project_snake:
+  type: str
+  default: "{{ project_name.strip() | lower | replace('-', '_') | replace(' ', '_') }}"
+  when: false
+
+project_description:
+  type: str
+  help: Project description
+  default: A Python service
+
+author_name:
+  type: str
+  help: Author name
+  default: Antonio Nocerino
+
+author_email:
+  type: str
+  help: Author email
+  default: antonio.nocerinoai@gmail.com
+
+license:
+  type: str
+  help: Project license; choose none to omit license metadata and the LICENSE file
+  choices:
+    MIT: MIT
+    Apache-2.0: Apache-2.0
+    BSD-3-Clause: BSD-3-Clause
+    Custom: Custom
+    No license: none
+  default: MIT
+
+# Docker configuration options
+include_docker:
+  type: bool
+  help: Include the complete Docker setup under the docker directory
+  default: true
+
+include_network:
+  type: bool
+  help: Include a Docker network for the app service
+  default: true
+  when: "{{ include_docker }}"
+
+network_name:
+  type: str
+  help: Name of the Docker network to be created
+  default: "{{ project_slug }}-network"
+  when: "{{ include_network }}"
+  validator: >-
+    {% if not (network_name.strip() | regex_search('^[a-zA-Z0-9_ -]+$')) %}
+      The network name must only contain alphanumeric characters, spaces, underscores, and hyphens.
+    {% endif %}
+
+network_slug:
+  type: str
+  default: "{{ network_name.strip() | lower | replace(' ', '-') }}"
+  when: false
+
+network_external:
+  type: bool
+  help: Use an existing external Docker network instead of creating a new one
+  default: false
+  when: "{{ include_network }}"
+
+# Architecture layers optional inclusion based on project requirements
+include_db:
+  type: bool
+  help: >-
+    Include database module ('db/').
+    Select true if your service requires persistent storage (SQLAlchemy/SQLModel sessions, migrations, or database client initialization).
+  default: true
+
+include_domain:
+  type: bool
+  help: >-
+    Include domain layer ('domain/').
+    Select true for DDD/Clean Architecture patterns to isolate business logic, domain entities, and value objects from external frameworks.
+  default: true
+
+include_repositories:
+  type: bool
+  help: >-
+    Include repositories layer ('repositories/').
+    Select true if you want to abstract database interactions (CRUD operations, queries) away from services and API handlers.
+  default: true
+
+include_genai:
+  type: bool
+  help: >-
+    Include Generative AI module ('gen_ai/').
+    Select true if you plan to build LLM agents, integrate prompt templates, or manage AI runtimes, tools, and context pipelines.
+  default: false
+
+include_mcp:
+  type: bool
+  help: >-
+    Include Model Context Protocol subfolder ('gen_ai/mcp/').
+    Select true if your AI capabilities need to expose or consume standard MCP servers/tools for contextual LLM integrations.
+  default: true
+  when: "{{ include_genai }}"
+
+# Tasks to run after the project is generated
+_tasks:
+  - "git init"
+  - >-
+    python -c 'import subprocess; subprocess.run(["git", "config", "user.name", {{ author_name | tojson }}], check=True)'
+  - >-
+    python -c 'import subprocess; subprocess.run(["git", "config", "user.email", {{ author_email | tojson }}], check=True)'
+  - python -c "import os; os.remove('LICENSE') if '{{ license }}' == 'none' and os.path.exists('LICENSE') else None"

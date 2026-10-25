@@ -1,0 +1,137 @@
+# Agent Guidelines - {{ project_name }}
+
+This file defines the architectural conventions, boundaries, and extension patterns to follow when modifying this project. Before adding packages, dependencies, or integrations, verify the actual state of the codebase: the presence of an optional directory does not imply that the corresponding feature is already implemented.
+
+---
+
+## 📂 Current Project Structure & Module Responsibilities
+
+The project layout was generated dynamically based on your configuration choices during project scaffolding. Below is the active structure for this service under `src/{{ project_snake }}/`:
+
+```text
+src/
+└── {{ project_snake }}/
+    ├── api/                # API routers and HTTP endpoints
+    ├── core/               # Configuration, JSON structured logging, and middleware
+{%- if include_db %}
+    ├── db/                 # Database session management and models
+{%- endif %}
+{%- if include_domain %}
+    ├── domain/             # Domain entities and core business logic
+{%- endif %}
+{%- if include_repositories %}
+    ├── repositories/       # Data access layer and repository patterns
+{%- endif %}
+{%- if include_genai %}
+    ├── gen_ai/             # Generative AI integrations, agents, and prompts
+    │   ├── agents/         # Generative AI agents, loops, and orchestrators
+    │   ├── context/        # Context management, memory policies, and retrieval
+    {%- if include_mcp %}
+    │   ├── mcp/            # Model Context Protocol (MCP) clients, servers, and tools
+    {%- endif %}
+    │   ├── middleware/     # AI pipeline guardrails, transformations, and interceptors
+    │   ├── models/         # AI-specific data models, configuration schemas, and types
+    │   ├── prompts/        # Prompt templates, versioning, and rendering utilities
+    │   └── runtime/        # LLM provider execution engines and client runtimes
+    │   └── tools/          # Executable functions and tools exposed to AI agents
+{%- endif %}
+    ├── schemas/            # Pydantic data models and DTOs
+    └── services/           # Application service layers
+
+```
+
+### Detailed Module Breakdown (Active Scaffolding)
+
+- **`api/`**: Handles the transport layer logic (FastAPI routers, versioned endpoints under `api/v1/`, status codes, query/path parameters, and HTTP-level dependencies). It must never contain business rules, SQL queries, or direct LLM calls.
+- **`core/`**: Houses application-wide utilities such as environment configuration, JSON-structured logging, global error handlers, and middleware. Do not use it as a dumping ground for unowned code.
+- **`schemas/`**: Contains Pydantic models for request payloads and response serialization at the HTTP boundary. These are transport contracts, not persistence or domain models.
+- **`services/`**: Implements application use cases. It coordinates domain logic, data access, and external integrations, acting as the primary orchestrator between API endpoints and infrastructure.
+{%- if include_db %}
+- **`db/`**: Owns database engines, connection pools, ORM session configuration (`async_sessionmaker`), and database persistence models. Keep driver-specific details and connection lifecycles here.
+{%- endif %}
+{%- if include_domain %}
+- **`domain/`**: Encapsulates pure business logic, entities, value objects, and domain invariants. It must remain entirely agnostic of frameworks (FastAPI, Pydantic, SQLAlchemy) and external infrastructure.
+{%- endif %}
+{%- if include_repositories %}
+- **`repositories/`**: Implements data access contracts and repository patterns, shielding application services from direct query-building and ORM specifics.
+{%- endif %}
+{%- if include_genai %}
+- **`gen_ai/`**: Root package for generative AI capabilities. Its submodules are structured as follows:
+  - `agents/`: Composition and orchestration of autonomous or multi-step agent loops.
+  - `context/`: Assembling runtime context, thread memory, cross-thread knowledge, and source ranking.
+  {%- if include_mcp %}
+  - `mcp/`: Integration with the Model Context Protocol (MCP) to consume or expose standardized tools and resources.
+  {%- endif %}
+  - `middleware/`: Pipeline interceptors specifically for AI workflows (e.g., input/output guardrails, token usage tracking).
+  - `models/`: Data structures and schemas specific to LLM configurations or provider payloads.
+  - `prompts/`: Prompt management, templating, and versioning.
+  - `runtime/`: Abstraction layer over LLM SDKs and provider execution environments.
+  - `tools/`: Executable tool definitions and argument validation for function calling.
+{%- endif %}
+
+
+
+---
+
+## 🏛️ Architectural Principles & Core Rules
+
+To maintain high maintainability, testability, and scalability, all contributions and extensions must adhere to the following principles:
+
+### 1. Dependency Injection & Service Container
+
+* **No Global Singletons for State:** Never store request-specific or mutable session state in global variables or singleton objects.
+* **FastAPI Dependency Injection:** Leverage FastAPI's `Depends` mechanism alongside the application composition root (`container.py`) to inject services, repositories, and database sessions.
+* **Explicit Wiring:** Keep component dependencies explicit in function signatures or constructor injections, allowing seamless unit testing with mocks.
+
+### 2. Separation of Concerns (Layers)
+
+* **Data Flow:** Requests flow strictly as: `HTTP Transport (api/) -> Application Service (services/) -> Domain/Persistence (domain/, repositories/, db/)`.
+* **Decoupling:** The transport layer must not know about databases, and the domain layer must not depend on FastAPI or Pydantic.
+
+---
+
+## 📈 Evolution & Extending the Architecture
+
+If a specific module was **not** included during initial project generation, you can introduce it as the application grows:
+
+### Adding `domain/` vs relying on `schemas/`
+
+* **Initial Phase:** For lightweight services, rely on `schemas/` for validation and `services/` for logic. Do not force an artificial domain layer.
+* **Evolution Phase:** Introduce `domain/` when business invariants become complex, rules are shared across multiple use cases, or logic needs to be tested independently of databases and HTTP frameworks.
+* **Rule:** The data flow moves as `HTTP Schema -> Application Service -> Domain Entity/Rules`. The domain layer must never import API schemas.
+
+### Adding Persistence (`db/` & `repositories/`)
+
+* Introduce `db/` when structured relational or non-relational storage is required.
+* Introduce `repositories/` to abstract data access behind clean interfaces. Services should depend on repository abstractions, not raw database sessions.
+
+### Adding Generative AI Capabilities (`gen_ai/`)
+
+If the generative AI module was omitted during initial scaffolding and you need to introduce it later, follow this structural blueprint and extension pattern:
+
+* **When to introduce it:** Add `gen_ai/` when your application requires LLM integrations, autonomous agents, RAG pipelines, or specialized prompt orchestration.
+* **Overall Structure & Submodules to Create:**
+    * `agents/`: Implement multi-step reasoning loops or autonomous workers, delegating actual transactional work back to application services.
+    * `context/`: Manage memory policies, split into **Thread Memory** (single conversation history managed via context assemblers, with raw message logs persisted in `db/`/`repositories/`) and **Cross-Thread Memory** (tenant/user-level knowledge extraction and semantic ranking).
+    * `mcp/` *(optional)*: Implement Model Context Protocol clients or servers if exposing/consuming standardized tools.
+    * `middleware/`: Build AI-specific interceptors for guardrails, token counting, or telemetry.
+    * `models/`: Define LLM configuration structures and provider payload models.
+    * `prompts/`: Store versioned prompt templates separately from code logic.
+    * `runtime/`: Encapsulate raw LLM SDK calls behind clean provider abstractions.
+    * `tools/`: Define executable functions with strict argument validation for agent tool-calling.
+
+
+* **Boundary Rule:** Keep LLM SDKs strictly isolated inside `gen_ai/`. Application services call the AI runtime through clean boundaries, ensuring business logic doesn't couple tightly with a specific model provider or vendor SDK.
+
+---
+
+## 🔍 Quality and Verification Gate
+
+Before submitting code changes, run the local CI verification gate using `just`:
+
+* `just lint` — Check code style with Ruff.
+* `just typecheck` — Run static type checks.
+* `just test` — Run the pytest test suite.
+* `just ci` — Execute the full local verification pipeline (quality, tests, and security audits).
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on development standards and the process for submitting pull requests.

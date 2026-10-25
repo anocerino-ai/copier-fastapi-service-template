@@ -1,0 +1,31 @@
+services:
+  app:
+    container_name: "{{ project_slug }}-ms"
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    # The port mapping must be configured from the environment variable in the .env file
+    ports:
+      - "${APP_PORT:-8000}:8000"  # <port exposed>:<port inside container>
+    
+    # Load environment variables from .env file
+    env_file:
+      - ../.env
+
+    # Connect the app service to the network if include_network is true
+    {% if include_network %}
+    networks:
+      - {{ project_slug }}-network
+    {% endif %}
+
+# Define the network if include_network is true
+{% if include_network %}
+networks:
+  {{ project_slug }}-network:
+    name: "${NETWORK_NAME}"
+    {% if network_external %}
+    external: true
+    {% else %}
+    driver: bridge
+    {% endif %}
+{% endif %}

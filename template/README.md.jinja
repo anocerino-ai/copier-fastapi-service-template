@@ -1,0 +1,165 @@
+# {{ project_name }}
+
+A modular, production-ready FastAPI microservice template built with modern Python tooling, structured logging, and clean architecture principles.
+
+---
+## 📌 Project Overview
+
+{{ project_description }}
+
+---
+## ✨ Features
+
+- ⚡ FastAPI Framework: High-performance async API architecture with automated OpenAPI docs.
+{%- if include_docker %}
+- 🐳 Production Containerization: Gunicorn + Uvicorn worker setup with non-root security.
+{%- endif %}
+- 📋 Structured JSON Logging: Centralized logging formatter with native ContextVar request_id tracing.
+- 🛠️ Modern Developer Tooling: Dependency management with uv and automated workflow execution with just.
+- 🔍 Quality & Security Gates: Built-in static analysis (Ruff, ty), vulnerability auditing (pip-audit, pysentry-rs), and SAST (Semgrep).
+{%- if include_genai %}
+- 🤖 Generative AI Suite: Integrated modules for agents, prompts, contexts, runtimes{% if include_mcp %}, and Model Context Protocol (MCP){% endif %}.
+{%- endif %}
+- 🏗️ Clean Architecture: Modular division of layers (schemas, services, api, core{% if include_db %}, db{% endif %}{% if include_domain %}, domain{% endif %}{% if include_repositories %}, repositories{% endif %}).
+
+---
+
+## 📂 Project Structure
+
+The project layout adapts dynamically based on your configuration choices:
+
+```text
+src/
+└── {{ project_snake }}/
+    ├── api/                # API routers and HTTP endpoints
+    ├── core/               # Configuration, JSON structured logging, and middleware
+{%- if include_db %}
+    ├── db/                 # Database session management and models
+{%- endif %}
+{%- if include_domain %}
+    ├── domain/             # Domain entities and core business logic
+{%- endif %}
+{%- if include_repositories %}
+    ├── repositories/       # Data access layer and repository patterns
+{%- endif %}
+{%- if include_genai %}
+    ├── gen_ai/              # Generative AI integrations, agents, and prompts
+    │   ├── agents/          # Generative AI agents and orchestrators
+    │   ├── context/         # Context management for generative AI
+    {%- if include_mcp %}
+    │   ├── mcp/             # Model Context Protocol (MCP) tools and servers
+    {%- endif %}
+    │   ├── middleware/      # Middleware for generative AI processing
+    │   ├── models/          # Generative AI model definitions and configurations
+    │   ├── prompts/         # Prompt templates and prompt engineering utilities
+    │   ├── runtime/         # Runtime environment and execution for generative AI tasks
+    │   └── tools/           # Tools and utilities for generative AI workflows
+{%- endif %}
+    ├── schemas/            # Pydantic data models and DTOs
+    └── services/           # Application service layers
+```
+
+---
+
+## 🛠️ Prerequisites & Tech Stack
+
+Before you begin, ensure you have the following installed on your system:
+
+* **Git** — For version control and guided commit workflows.
+* **Python 3.13+**
+* [**uv**](https://github.com/astral-sh/uv) — Fast Python package installer and dependency resolver.
+* [**just**](https://github.com/casey/just) — Command runner for development workflows.
+{%- if include_docker %}
+* **Docker & Docker Compose** — For containerized deployments and multi-container environment management.
+{%- endif %}
+
+---
+
+## 🚀 Getting Started
+
+1. **Install dependencies and set up the environment**:
+
+   ```bash
+   just install
+   ```
+
+2. **Run the development server**:
+   Start the FastAPI service with hot-reload enabled:
+
+   ```bash
+   cp .env.example .env
+   just run-dev
+   ```
+
+3. **Build and run with Docker** (optional):
+   Run `just install` first to resolve dependencies and generate `uv.lock`, which the Docker build requires:
+
+   ```bash
+   cp .env.example .env
+   just install
+   docker compose --env-file .env -f docker/compose.yaml up --build
+   ```
+
+4. **Access the API**:
+   Open your browser or API client at:
+   * **Swagger Docs**: `http://localhost:8000/docs`
+   * **Health Check**: `http://localhost:8000/api/v1/health`
+
+---
+
+## 💻 Development Workflow
+
+This project uses **`just`** to standardize all local development tasks. Run `just` without arguments to see the full list of available commands:
+
+* **Code Quality & Linting**:
+  * `just lint` — Check code with Ruff.
+  * `just format` — Format code and auto-fix lint issues.
+  * `just typecheck` — Run static type checking.
+
+* **Testing & Coverage**:
+  * `just test` — Run pytest test suite.
+  * `just test-cov` — Run tests with terminal and HTML coverage reports.
+
+* **Security & Audits**:
+  * `just security` — Run vulnerability scans, SAST (Semgrep), dependency audits, and license checks.
+
+* **Full CI Gate**:
+  * `just ci` — Run the complete local verification gate (quality, tests, security).
+
+---
+
+## ⚙️ Environment Variables
+
+Copy `.env.example` to `.env` and adjust the values for your environment. Application settings map to the fields in `core/config.py`:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `APP_ENV` | `development` | Environment name used in application startup logs. |
+| `DEBUG` | `false` | Enables FastAPI debug mode when set to `true`. |
+| `LOG_LEVEL` | `INFO` | Root logging level. |
+| `UVICORN_HOST` | `0.0.0.0` | Configured Uvicorn bind host. |
+| `UVICORN_PORT` | `8000` | Configured Uvicorn bind port. |
+| `CORS_ORIGINS` | `["http://localhost:3000","http://localhost:8000"]` | JSON array of allowed CORS origins. |
+| `CORS_ALLOW_CREDENTIALS` | `true` | Whether CORS requests may include credentials. |
+| `APP_HOST` | `127.0.0.1` | Host passed by the `just run-dev` recipe. |
+| `APP_PORT` | `8000` | Host port used by `just run-dev` and Docker Compose. |
+{% if include_docker and include_network %}| `NETWORK_NAME` | `{{ network_slug }}` | Docker Compose network name. |
+{% endif %}
+
+`APP_HOST`, `APP_PORT`, and `NETWORK_NAME` configure the development command or Docker Compose; they are not fields on the Pydantic `Settings` model. The Copier questionnaire options (such as project name, author, and architecture choices) are generation-time inputs and do not belong in `.env`.
+
+---
+
+## 📝 Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on development standards and the process for submitting pull requests.
+
+---
+
+## 📄 License
+
+{%- if license != "none" %}
+This project is licensed under the **{{ license }}** License - see the [LICENSE](LICENSE) file for details.
+{%- else %}
+This project is unlicensed (Private / Proprietary).
+{%- endif %}

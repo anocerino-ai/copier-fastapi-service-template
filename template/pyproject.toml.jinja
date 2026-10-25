@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "{{ project_slug }}"
+version = "0.1.0"
+description = "{{ project_description }}"
+readme = "README.md"
+requires-python = ">=3.13"
+{% if license != 'none' %}license = "{{ 'LicenseRef-Proprietary' if license == 'Custom' else license }}"
+{% endif %}
+authors = [
+  {name = "{{ author_name }}", email = "{{ author_email }}"},
+]
+keywords = []
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+{% if license == 'MIT' %}  "License :: OSI Approved :: MIT License",
+{% elif license == 'Apache-2.0' %}  "License :: OSI Approved :: Apache Software License",
+{% elif license == 'BSD-3-Clause' %}  "License :: OSI Approved :: BSD License",
+{% endif %}
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Internet :: WWW/HTTP",
+]
+
+dependencies = [
+  "fastapi>=0.161.1",
+  "pydantic>=2.14.1",
+  "pydantic-settings>=2.16.1",
+  "uvicorn[standard]>=0.54.0",
+  "gunicorn>=23.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.0.0",
+    "httpx2>=2.16.0",
+    "pip-audit>=2.9.0",
+    "pip-licenses>=5.5.5",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.17.0",
+    "ruff>=0.17.2",
+    "semgrep>=1.79.0",
+    "ty>=0.0.91"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/{{ project_snake }}"]
+
+[tool.ruff]
+extend = ".pytools/ruff.toml"

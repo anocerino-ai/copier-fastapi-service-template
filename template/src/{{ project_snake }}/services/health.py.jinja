@@ -1,0 +1,14 @@
+"""Health check service."""
+
+from {{ project_snake }} import __version__
+
+
+class HealthService:
+    """Health check service."""
+
+    async def check_health(self) -> dict[str, str]:
+        """Check application health."""
+        return {
+            "status": "ok",
+            "version": __version__,
+        }

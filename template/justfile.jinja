@@ -1,0 +1,87 @@
+set shell := ["bash", "-c"]
+set dotenv-load := true
+
+# Variables
+VENV := ".venv"
+PYTHON := if os() == "windows" {
+    ".venv/Scripts/python"
+} else {
+    ".venv/bin/python"
+}
+
+# Help
+@default:
+    just --list --unsorted
+
+# Install dependencies
+@install:
+    uv sync --all-groups
+    if [ ! -e .git ]; then git init; fi
+
+# Update dependencies
+@update:
+    uv lock --upgrade
+    uv sync --all-groups
+
+# Lint with Ruff
+@lint:
+    uv run ruff check --config .pytools/ruff.toml src tests
+
+@lock-check:
+    uv lock --check
+
+# Check formatting without modifying files
+@format-check:
+    uv run ruff format --check --config .pytools/ruff.toml src tests
+
+# Format with Ruff
+@format:
+    uv run ruff format --config .pytools/ruff.toml src tests
+    uv run ruff check --config .pytools/ruff.toml --fix src tests
+
+# Type check with ty
+@typecheck:
+    uv run ty check --config-file .pytools/ty.toml src tests
+
+# Run tests
+@test:
+    uv run pytest -c .pytools/pytest.ini --rootdir . tests -v
+
+# Run tests with coverage
+@test-cov:
+    uv run pytest -c .pytools/pytest.ini --rootdir . tests -v --cov=src/{{ project_snake }} --cov-config=.pytools/coverage.toml --cov-report=term-missing --cov-report=html
+
+# Scan dependencies for vulnerabilities
+@vuln:
+    uvx pysentry-rs .
+
+# Static security analysis (Semgrep)
+@sast:
+    uv run semgrep --config=p/python --config=p/security-audit src
+
+# Python audit analysis
+@audit:
+    uv run pip-audit
+
+@license-check:
+    uv run pip-licenses --from=src/{{ project_snake }} --format=markdown --output-file=3rd-LICENSES.md
+
+# Run application (FastAPI)
+@run-dev:
+    uv run uvicorn {{ project_snake }}.main:app --reload --host "${APP_HOST:-127.0.0.1}" --port "${APP_PORT:-8000}"
+
+# Create a guided Conventional Commit, the file must be staged before running this command
+@commit:
+    uv run cz --config .pytools/cz.toml commit
+
+# Local quality gate shared with prek
+@code-quality: lint format-check typecheck lock-check
+
+# Run full test suite with coverage
+@test-all: test test-cov
+
+# Run security checks
+@security: audit vuln sast license-check
+
+# Full CI and pre-push gate
+@ci: code-quality test-all security

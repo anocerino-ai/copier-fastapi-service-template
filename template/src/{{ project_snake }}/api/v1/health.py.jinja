@@ -1,0 +1,15 @@
+"""Health check routes."""
+
+from fastapi import APIRouter
+
+from {{ project_snake }}.container import HealthServiceDep
+from {{ project_snake }}.schemas import HealthResponse
+
+router = APIRouter(prefix="/health", tags=["health"])
+
+
+@router.get("", response_model=HealthResponse)
+async def health_check(service: HealthServiceDep) -> HealthResponse:
+    """Check application health."""
+    data = await service.check_health()
+    return HealthResponse(**data)

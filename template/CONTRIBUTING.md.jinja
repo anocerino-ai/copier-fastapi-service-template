@@ -1,0 +1,99 @@
+# Contributing to {{ project_name }}
+
+Thank you for your interest in contributing to **{{ project_name }}**! We welcome contributions of all kinds—bug reports, feature requests, documentation, and code pull requests.
+
+This project uses modern Python tooling (`uv`), automation (`just`), and standard version control workflows to ensure a smooth and consistent development experience.
+
+---
+
+## 🛠️ Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+- **Git** (for version control and guided commit workflows)
+- **Python 3.13+**
+- **[uv](https://github.com/astral-sh/uv)** (Fast Python package installer and resolver)
+- **[just](https://github.com/casey/just)** (A handy way to save and run project-specific commands)
+
+---
+
+## 🚀 Getting Started
+
+1. **Clone the repository** (if you haven't already):
+   ```bash
+   git clone <repository-url>
+   cd <repository-folder>
+   ```
+
+2. **Install dependencies and set up the environment**:
+   Run the following `just` command to sync all development dependencies and initialize Git if needed:
+   ```bash
+   just install
+   ```
+
+---
+
+## 💻 Development Workflow
+
+We use a set of predefined `just` recipes to streamline development. You can list all available commands at any time by running:
+```bash
+just
+```
+
+### Running the Application
+To run the FastAPI development server with hot-reload enabled:
+```bash
+just run-dev
+```
+
+### Code Quality, Linting & Formatting
+We enforce strict linting and formatting standards using **Ruff** and **ty** for type checking.
+- **Check for lint errors**: `just lint`
+- **Check formatting**: `just format-check`
+- **Auto-format code and fix fixable issues**: `just format`
+- **Type checking**: `just typecheck`
+
+### Testing
+We use **Pytest** for testing, complete with coverage reports.
+- **Run test suite**: `just test`
+- **Run tests with HTML/Terminal coverage**: `just test-cov`
+
+### Security Checks
+Before submitting code, ensure your changes pass our security and audit suites:
+- **Audit dependencies**: `just audit`
+- **Scan vulnerabilities**: `just vuln`
+- **Static security analysis (SAST)**: `just sast`
+- **Check licenses**: `just license-check`
+
+---
+
+## 🔍 The CI Gate (Pre-Push Checklist)
+
+Before opening a pull request, run the full verification gate locally. This command runs code quality checks, the complete test suite with coverage, and all security audits:
+```bash
+just ci
+```
+*If `just ci` passes successfully, your code is ready for review!*
+
+---
+
+## 📝 Conventional Commits
+
+We follow the **Conventional Commits** specification to automate versioning and changelogs. 
+
+When you are ready to commit your changes, stage your files first, then use our guided commit tool:
+```bash
+git add .
+just commit
+```
+This will invoke **Commitizen** to help you format your commit message correctly (e.g., `feat(api): add new health endpoint`, `fix(db): resolve connection timeout`).
+
+---
+
+## 🤝 Pull Request Process
+
+1. Fork the repository and create your feature branch from `main` (`git checkout -b feature/amazing-feature`).
+2. Implement your changes following the project's architecture and coding standards.
+3. Run `just ci` to ensure everything is green.
+4. Push your branch and open a Pull Request against `main`. Provide a clear description of the problem and solution.
+
+Happy Coding! 🚀

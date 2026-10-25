@@ -1,0 +1,22 @@
+"""Application tests."""
+
+
+def test_app_startup(app):
+    """The application factory builds an app with the expected title."""
+    assert app.title == "{{ project_name }}"
+
+
+def test_versioned_health_endpoint(client):
+    """The versioned health endpoint reports status ok."""
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "version" in data
+
+
+def test_request_id_is_propagated(client):
+    """A caller-provided request ID is returned with the response."""
+    response = client.get("/api/v1/health", headers={"X-Request-ID": "request-123"})
+
+    assert response.headers["X-Request-ID"] == "request-123"
